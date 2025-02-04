@@ -47,4 +47,6 @@ class Image(BaseMixin, Base):
     image_url: M[str | None] = column(nullable=True)
     app_bundle: M[str]
     user_id: M[str]
+    prompt: M[str]
+    image_size: M[str]
 

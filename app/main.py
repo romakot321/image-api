@@ -11,6 +11,7 @@ from slowapi.errors import RateLimitExceeded
 from contextlib import asynccontextmanager
 
 from app.db.admin import attach_admin_panel
+from app.services.image import ImageService
 
 
 class ProjectSettings(BaseSettings):
@@ -41,8 +42,17 @@ def register_cors(application):
     )
 
 
+@repeat_every(seconds=15)
+async def process_images_queue():
+    try:
+        await ImageService.process_images_queue()
+    except Exception as e:
+        logger.exception(e)
+
+
 @asynccontextmanager
 async def lifespan(app):
+    await process_images_queue()
     yield
 
 

@@ -25,11 +25,13 @@ class ImageService:
     async def create(self, schema: ImageTaskCreateSchema) -> ImageTaskSchema:
         model = await self.image_repository.create(
             user_id=schema.user_id,
-            app_bundle=schema.app_bundle
+            app_bundle=schema.app_bundle,
+            prompt=schema.prompt,
+            image_size=schema.image_size
         )
         return ImageTaskSchema.model_validate(model)
 
-    async def send(self, schema: ImageTaskCreateSchema, image_id: UUID):
+    async def _send(self, schema: ImageTaskCreateSchema, image_id: UUID):
         request = AIInputSchema(
             prompt=schema.prompt,
             image_size=schema.image_size.value,
@@ -64,7 +66,7 @@ class ImageService:
             is_finished=False
         )
 
-    async def store_ai_output(self, schema: AIOutputSchema, image_id: UUID):
+    async def store_ai_result(self, schema: AIOutputSchema, image_id: UUID):
         await self.image_repository.update(
             str(image_id),
             is_finished=True,
@@ -76,7 +78,7 @@ class ImageService:
         return ImageTaskSchema.model_validate(model)
 
     async def _check(self, image: Image):
-        if not image.api_id:
+        if not image.request_id:
             return
         if not (await self.ai_repository.is_finished(image.request_id)):
             return
@@ -88,6 +90,27 @@ class ImageService:
             is_invalid=False,
             image_url=result.images[0].url
         )
+
+    @classmethod
+    async def process_images_queue(cls):
+        session_getter = get_session()
+        db_session = await anext(session_getter)
+        self = cls(ai_repository=AIRepository(), image_repository=ImageRepository(session=db_session))
+
+        generating_count = await self.image_repository.count_generating_images()
+        if generating_count >= 5:
+            return
+        images = await self.image_repository.list_unsended()
+        if not images:
+            return
+        for image in images[:5 - generating_count]:
+            schema = ImageTaskCreateSchema.model_validate(image)
+            await self._send(schema, image.id)
+
+        try:
+            await anext(session_getter)
+        except StopAsyncIteration:
+            pass
 
     @classmethod
     async def update_images_status(cls):

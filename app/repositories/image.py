@@ -29,3 +29,10 @@ class ImageRepository(BaseRepository):
     async def list_in_progress(self) -> list[Image]:
         return list(await self._get_many(count=1000000, status=ImageStatus.queued))
 
+    async def count_generating_images(self) -> int:
+        models = list(await self._get_many(status=ImageStatus.queued))
+        return len(models)
+
+    async def list_unsended(self) -> list[Image]:
+        return list(await self._get_many(count=1000000, status=None, exclude_none=False))
+
