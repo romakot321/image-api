@@ -1,0 +1,28 @@
+services:
+  app:
+    build:
+      context: ./
+    container_name: image_app
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    restart: always
+    networks:
+      default:
+      global_network:
+
+  postgres:
+    image: postgres:latest
+    container_name: image_db
+    restart: always
+    env_file:
+      - .env
+    networks:
+      default:
+    ports:
+      - "127.0.0.1:5432:5432"
+
+networks:
+  global_network:
+    external: true
