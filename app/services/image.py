@@ -27,7 +27,7 @@ class ImageService:
             user_id=schema.user_id,
             app_bundle=schema.app_bundle,
             prompt=schema.prompt,
-            image_size=schema.image_size
+            image_size=schema.image_size.value
         )
         return ImageTaskSchema.model_validate(model)
 
@@ -66,7 +66,7 @@ class ImageService:
             is_finished=False
         )
 
-    async def store_ai_result(self, schema: AIOutputSchema, image_id: UUID):
+    async def store_ai_output(self, schema: AIOutputSchema, image_id: UUID):
         await self.image_repository.update(
             str(image_id),
             is_finished=True,
