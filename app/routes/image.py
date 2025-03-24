@@ -24,8 +24,6 @@ valid_access_token = os.getenv("ACCESS_TOKEN", "123")
 )
 async def create_image_task(
         schema: ImageTaskCreateSchema,
-        request: Request,
-        background_tasks: BackgroundTasks,
         access_token: str = Header(),
         service: ImageService = Depends()
 ):
@@ -67,7 +65,6 @@ async def create_image_to_image_task(
 )
 async def get_image_task(
         image_id: UUID,
-        request: Request,
         access_token: str = Header(),
         service: ImageService = Depends()
 ):
@@ -77,11 +74,12 @@ async def get_image_task(
 
 
 @router.post("/{image_id}/webhook", include_in_schema=False)
-async def store_ai_result(
+async def store_ai_output(
         image_id: UUID,
         schema: AIOutputSchema,
         service: ImageService = Depends()
 ):
-    await service.store_ai_result(schema, image_id)
+    print(schema)
+    await service.store_ai_output(schema, image_id)
     return "OK"
 
