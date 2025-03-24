@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Request, Header, HTTPException, Response
+import io
+from fastapi import APIRouter, Depends, File, Request, Header, HTTPException, Response, UploadFile
 from fastapi import BackgroundTasks
 from uuid import UUID
 import os
@@ -31,7 +32,28 @@ async def create_image_task(
     if access_token != valid_access_token:
         raise HTTPException(401)
     image = await service.create(schema)
-    background_tasks.add_task(service.send, schema, image.id)
+    return image
+
+
+@router.post(
+    '/improve',
+    response_model=ImageTaskSchema,
+    description="""
+        Endpoint for start a task for image2image generation.
+        For do request you need to specify Access-Token header, ask me in telegram about it.
+
+        Image sizes: square_hd square portrait_4_3 portrait_16_9 landscape_4_3 landscape_16_9
+    """
+)
+async def create_image_to_image_task(
+        file: UploadFile = File(),
+        schema: ImageTaskCreateSchema = Depends(),
+        access_token: str = Header(),
+        service: ImageService = Depends()
+):
+    if access_token != valid_access_token:
+        raise HTTPException(401)
+    image = await service.create_img2img(schema, io.BytesIO(await file.read()))
     return image
 
 

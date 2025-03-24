@@ -49,4 +49,5 @@ class Image(BaseMixin, Base):
     user_id: M[str]
     prompt: M[str]
     image_size: M[str]
+    resource_image_url: M[str | None]
 

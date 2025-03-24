@@ -1,7 +1,9 @@
 import os
+import io
 import hashlib
 import asyncio
 import fal_client
+from PIL import Image
 from aiohttp import ClientSession, MultipartWriter, ClientTimeout
 from pydantic import ValidationError
 from loguru import logger
@@ -34,3 +36,17 @@ class AIRepository:
         logger.debug(result)
         return AIOutputSchema.model_validate(result)
 
+    async def upload_image(self, image_body: io.BytesIO) -> str:
+        img = Image.open(image_body)
+        return await fal_client.upload_image_async(img)
+
+    async def submit_img2img(self, schema: AIInputSchema, image_url: str, image_id: str) -> str:
+        """Return the request_id"""
+        arguments = schema.model_dump()
+        arguments["image_url"] = image_url
+        handler = await fal_client.submit_async(
+            "fal-ai/stable-diffusion-v3-medium/image-to-image",
+            arguments=arguments,
+            webhook_url=(self.API_WEBHOOK_BASEURL + f"/image/{image_id}/webhook" if self.API_WEBHOOK_BASEURL is not None else None),
+        )
+        return handler.request_id
